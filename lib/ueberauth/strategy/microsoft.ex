@@ -1,7 +1,8 @@
 defmodule Ueberauth.Strategy.Microsoft do
   use Ueberauth.Strategy,
     default_scope: "https://graph.microsoft.com/user.read openid email offline_access",
-    uid_field: :id
+    uid_field: :id,
+    email_key_order: ["mail", "userPrincipalName"]
 
   alias OAuth2.{Response, Error}
   alias Ueberauth.Auth.{Info, Credentials, Extra}
@@ -83,10 +84,11 @@ defmodule Ueberauth.Strategy.Microsoft do
 
   def info(conn) do
     user = conn.private.ms_user
+    email_key_order = option(conn, :email_key_order) |> List.wrap()
 
     %Info{
       name: user["displayName"],
-      email: user["mail"] || user["userPrincipalName"],
+      email: Enum.find_value(email_key_order, &user[&1]),
       first_name: user["givenName"],
       last_name: user["surname"]
     }
